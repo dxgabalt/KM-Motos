@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { CheckCircle } from 'lucide-react-native';
+import { CircleCheck as CheckCircle } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { useCart } from '@/contexts/CartContext';
 

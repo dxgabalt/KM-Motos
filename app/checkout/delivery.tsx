@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowLeft, Home, Clock, CreditCard, ChevronRight } from 'lucide-react-native';
+import { ArrowLeft, Chrome as Home, Clock, CreditCard, ChevronRight } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
