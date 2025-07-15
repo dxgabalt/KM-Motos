@@ -1,0 +1,29 @@
+TABLA_ORIGEN,COLUMNA_ORIGEN,TABLA_DESTINO,COLUMNA_DESTINO,TIPO_RELACION,DESCRIPCION,CONSTRAINT_NAME
+profiles,id,auth.users,id,ONE_TO_ONE,Un perfil por usuario de autenticación,fk_profiles_auth_users
+profiles,role_id,roles,id,MANY_TO_ONE,Muchos usuarios pueden tener el mismo rol,fk_profiles_roles
+
+addresses,user_id,profiles,id,MANY_TO_ONE,Un usuario puede tener múltiples direcciones,fk_addresses_profiles
+
+wholesaler_requests,user_id,profiles,id,MANY_TO_ONE,Un usuario puede tener múltiples solicitudes mayoristas,fk_wholesaler_requests_profiles
+
+products,category_id,categories,id,MANY_TO_ONE,Muchos productos pueden estar en la misma categoría,fk_products_categories
+products,brand_id,brands,id,MANY_TO_ONE,Muchos productos pueden ser de la misma marca,fk_products_brands
+
+product_reviews,product_id,products,id,MANY_TO_ONE,Un producto puede tener múltiples reseñas,fk_product_reviews_products
+product_reviews,user_id,profiles,id,MANY_TO_ONE,Un usuario puede escribir múltiples reseñas,fk_product_reviews_profiles
+
+wholesaler_pricing,product_id,products,id,MANY_TO_ONE,Un producto puede tener múltiples niveles de precios mayoristas,fk_wholesaler_pricing_products
+
+clients,sales_advisor_id,profiles,id,MANY_TO_ONE,Un asesor puede tener múltiples clientes,fk_clients_profiles
+
+orders,client_id,clients,id,MANY_TO_ONE,Un cliente puede tener múltiples pedidos,fk_orders_clients
+orders,user_id,profiles,id,MANY_TO_ONE,Un usuario puede crear múltiples pedidos,fk_orders_profiles
+orders,delivery_address_id,addresses,id,MANY_TO_ONE,Una dirección puede ser usada en múltiples pedidos,fk_orders_addresses
+orders,delivery_option_id,delivery_options,id,MANY_TO_ONE,Una opción de entrega puede ser usada en múltiples pedidos,fk_orders_delivery_options
+
+order_items,order_id,orders,id,MANY_TO_ONE,Un pedido puede tener múltiples items,fk_order_items_orders
+order_items,product_id,products,id,MANY_TO_ONE,Un producto puede estar en múltiples pedidos,fk_order_items_products
+
+payment_methods,user_id,profiles,id,MANY_TO_ONE,Un usuario puede tener múltiples métodos de pago,fk_payment_methods_profiles
+
+support_tickets,user_id,profiles,id,MANY_TO_ONE,Un usuario puede crear múltiples tickets de soporte,fk_support_tickets_profiles

@@ -1,0 +1,21 @@
+TRIGGER,TABLA,EVENTO,FUNCION,DESCRIPCION,ESTADO
+trigger_update_product_rating,product_reviews,"INSERT, UPDATE, DELETE",update_product_rating(),"Actualizar automáticamente rating promedio y conteo de reseñas",COMPLETADO
+trigger_update_timestamps,profiles,UPDATE,update_updated_at(),"Actualizar campo updated_at automáticamente",COMPLETADO
+trigger_update_timestamps,addresses,UPDATE,update_updated_at(),"Actualizar campo updated_at automáticamente",COMPLETADO
+trigger_update_timestamps,orders,UPDATE,update_updated_at(),"Actualizar campo updated_at automáticamente",COMPLETADO
+trigger_update_timestamps,wholesaler_requests,UPDATE,update_updated_at(),"Actualizar campo updated_at automáticamente",COMPLETADO
+trigger_update_timestamps,wholesaler_pricing,UPDATE,update_updated_at(),"Actualizar campo updated_at automáticamente",COMPLETADO
+trigger_update_timestamps,product_reviews,UPDATE,update_updated_at(),"Actualizar campo updated_at automáticamente",COMPLETADO
+trigger_update_timestamps,support_tickets,UPDATE,update_updated_at(),"Actualizar campo updated_at automáticamente",COMPLETADO
+trigger_update_timestamps,clients,UPDATE,update_updated_at(),"Actualizar campo updated_at automáticamente",COMPLETADO
+
+trigger_validate_default_address,addresses,"INSERT, UPDATE",validate_single_default_address(),"Asegurar que solo hay una dirección predeterminada por usuario",PENDIENTE
+trigger_validate_default_payment,payment_methods,"INSERT, UPDATE",validate_single_default_payment(),"Asegurar que solo hay un método de pago predeterminado por usuario",PENDIENTE
+trigger_update_inventory,order_items,INSERT,update_product_inventory(),"Actualizar inventario al crear items de pedido",PENDIENTE
+trigger_restore_inventory,order_items,DELETE,restore_product_inventory(),"Restaurar inventario al cancelar items de pedido",PENDIENTE
+trigger_log_price_changes,products,UPDATE,log_price_history(),"Registrar historial de cambios de precios",PENDIENTE
+trigger_notify_low_stock,products,UPDATE,notify_low_inventory(),"Notificar cuando el stock esté bajo",PENDIENTE
+trigger_audit_order_changes,orders,UPDATE,audit_order_modifications(),"Auditar cambios en pedidos para trazabilidad",PENDIENTE
+trigger_validate_coupon_usage,orders,INSERT,validate_coupon_limits(),"Validar límites de uso de cupones",PENDIENTE
+trigger_calculate_loyalty_points,orders,INSERT,award_loyalty_points(),"Calcular y otorgar puntos de lealtad",PENDIENTE
+trigger_send_order_notifications,orders,"INSERT, UPDATE",send_order_status_notifications(),"Enviar notificaciones de cambio de estado",PENDIENTE

@@ -1,0 +1,45 @@
+INDICE,TABLA,COLUMNAS,TIPO,PROPOSITO,ESTADO
+idx_products_category,products,category_id,BTREE,Optimizar consultas por categoría,COMPLETADO
+idx_products_brand,products,brand_id,BTREE,Optimizar consultas por marca,COMPLETADO
+idx_products_price,products,price,BTREE,Optimizar ordenamiento por precio,COMPLETADO
+idx_products_stock,products,stock_quantity,BTREE,Consultas de productos disponibles,COMPLETADO
+idx_products_rating,products,average_rating,BTREE,Ordenamiento por rating,COMPLETADO
+idx_products_name_search,products,name,GIN,Búsqueda de texto completo en nombres,COMPLETADO
+
+idx_orders_user,orders,user_id,BTREE,Consultas rápidas de pedidos por usuario,COMPLETADO
+idx_orders_status,orders,status,BTREE,Filtros por estado de pedido,COMPLETADO
+idx_orders_date,orders,order_date,BTREE,Ordenamiento cronológico de pedidos,COMPLETADO
+
+idx_order_items_order,order_items,order_id,BTREE,Items por pedido,COMPLETADO
+idx_order_items_product,order_items,product_id,BTREE,Pedidos por producto,COMPLETADO
+
+idx_addresses_user,addresses,user_id,BTREE,Direcciones por usuario,COMPLETADO
+idx_addresses_default,addresses,is_default,BTREE,Direcciones predeterminadas,COMPLETADO
+
+idx_product_reviews_product,product_reviews,product_id,BTREE,Reseñas por producto,COMPLETADO
+idx_product_reviews_user,product_reviews,user_id,BTREE,Reseñas por usuario,COMPLETADO
+idx_product_reviews_rating,product_reviews,rating,BTREE,Filtros por calificación,COMPLETADO
+
+idx_wholesaler_requests_user,wholesaler_requests,user_id,BTREE,Solicitudes por usuario,COMPLETADO
+idx_wholesaler_requests_status,wholesaler_requests,status,BTREE,Filtros por estado de solicitud,COMPLETADO
+
+idx_wholesaler_pricing_product,wholesaler_pricing,product_id,BTREE,Precios mayoristas por producto,COMPLETADO
+idx_wholesaler_pricing_quantity,wholesaler_pricing,min_quantity,BTREE,Búsqueda por cantidad mínima,COMPLETADO
+
+idx_coupons_code,coupons,code,BTREE,Búsqueda rápida de cupones,COMPLETADO
+idx_coupons_active,coupons,is_active,BTREE,Cupones activos,COMPLETADO
+idx_coupons_expiry,coupons,valid_until,BTREE,Validación de expiración,COMPLETADO
+
+idx_support_tickets_user,support_tickets,user_id,BTREE,Tickets por usuario,COMPLETADO
+idx_support_tickets_status,support_tickets,status,BTREE,Filtros por estado de ticket,COMPLETADO
+
+idx_payment_methods_user,payment_methods,user_id,BTREE,Métodos de pago por usuario,COMPLETADO
+idx_payment_methods_default,payment_methods,is_default,BTREE,Métodos predeterminados,COMPLETADO
+
+idx_clients_advisor,clients,sales_advisor_id,BTREE,Clientes por asesor,COMPLETADO
+idx_clients_active,clients,is_active,BTREE,Clientes activos,COMPLETADO
+
+idx_stores_active,stores,is_active,BTREE,Tiendas activas,COMPLETADO
+idx_stores_city,stores,city,BTREE,Búsqueda por ciudad,COMPLETADO
+
+idx_delivery_options_active,delivery_options,is_active,BTREE,Opciones de entrega activas,COMPLETADO
