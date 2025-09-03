@@ -60,22 +60,49 @@ export default function ProfileScreen() {
   };
 
   const handleImagePicker = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      toast.error('Se requieren permisos para acceder a la galería');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      // TODO: Upload image to Supabase Storage
-      toast.success('Imagen seleccionada');
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        toast.error('Se requieren permisos para acceder a la galería');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets?.length > 0) {
+        setLoading(true);
+        const asset = result.assets[0];
+        const fileName = `${user.id}.jpg`;
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        // Subir a Supabase Storage
+        const { data, error: uploadError } = await supabase.storage.from('avatars').upload(fileName, blob, { upsert: true });
+        if (uploadError) {
+          console.log('Error al subir foto:', uploadError);
+          toast.error('Error al subir foto');
+          setLoading(false);
+          return;
+        }
+        // Obtener URL pública
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+        const avatar_url = urlData?.publicUrl || '';
+        // Actualizar perfil
+        try {
+          await updateProfile({ avatar_url });
+          toast.success('Foto de perfil actualizada');
+        } catch (patchError) {
+          console.log('Error al actualizar perfil:', patchError);
+          toast.error('Error al actualizar perfil');
+        }
+        setLoading(false);
+      }
+    } catch (error) {
+      console.log('Error en picker:', error);
+      toast.error('Error al seleccionar imagen');
+      setLoading(false);
     }
   };
 
@@ -116,11 +143,10 @@ export default function ProfileScreen() {
         onSearchPress={() => router.push('/search')}
         showProfile={false}
       />
-      
       <ScrollView style={styles.content}>
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
-            <TouchableOpacity onPress={handleImagePicker}>
+            <TouchableOpacity onPress={handleImagePicker} disabled={loading}>
               {profile?.avatar_url ? (
                 <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
               ) : (
@@ -129,11 +155,14 @@ export default function ProfileScreen() {
                 </View>
               )}
               <View style={styles.cameraButton}>
-                <Camera size={16} color="#000" />
+                {loading ? (
+                  <ActivityIndicator size={16} color="#000" />
+                ) : (
+                  <Camera size={16} color="#000" />
+                )}
               </View>
             </TouchableOpacity>
           </View>
-          
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>
               {profile?.full_name || 'Usuario'}
@@ -142,10 +171,10 @@ export default function ProfileScreen() {
               {user.email}
             </Text>
           </View>
-          
           <TouchableOpacity
             style={styles.editButton}
             onPress={() => setIsEditing(!isEditing)}
+            disabled={loading}
           >
             <Edit size={20} color="#1DB954" />
           </TouchableOpacity>
