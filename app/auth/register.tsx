@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner-native';
 
 export default function RegisterScreen() {
@@ -24,9 +26,42 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       const fullName = `${firstName} ${lastName}`;
-      await signUp(email, password, fullName, phone);
-      toast.success('Registro exitoso');
-      router.replace('/(tabs)');
+      
+      // Registro con Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        phone: phone,
+        options: {
+          data: {
+            full_name: fullName
+          }
+        }
+      });
+
+      if (error) {
+        toast.error(error.message || 'Error al registrarse');
+        return;
+      }
+
+      if (data.user) {
+        // Crear perfil automáticamente
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            full_name: fullName,
+            phone: phone,
+            role: 'customer'
+          });
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
+
+        toast.success('Registro exitoso');
+        router.replace('/profile/upload-photo');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Error al registrarse');
     } finally {
@@ -34,10 +69,24 @@ export default function RegisterScreen() {
     }
   };
 
+  const handleGoogleRegister = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google'
+      });
+      
+      if (error) {
+        toast.error('Error con Google: ' + error.message);
+      }
+    } catch (error: any) {
+      toast.error('Error al conectar con Google');
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.logo}>KM MOTOS</Text>
+        <Logo width={180} height={60} />
         <Text style={styles.title}>Registrarse</Text>
       </View>
 
@@ -94,10 +143,10 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.socialButtons}>
-          <TouchableOpacity style={styles.socialButton}>
+          <TouchableOpacity style={[styles.socialButton, styles.facebookButton]}>
             <Text style={styles.socialButtonText}>f</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
+          <TouchableOpacity style={[styles.socialButton, styles.googleButton]} onPress={handleGoogleRegister}>
             <Text style={styles.socialButtonText}>G</Text>
           </TouchableOpacity>
         </View>
@@ -118,18 +167,19 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#000000',
   },
   header: {
     alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: 80,
+    paddingBottom: 60,
   },
   logo: {
-    color: '#1DB954',
-    fontSize: 32,
+    color: '#3CB043',
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 40,
+    marginBottom: 60,
+    letterSpacing: 2,
   },
   title: {
     color: '#fff',
@@ -164,9 +214,14 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#1877F2',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  facebookButton: {
+    backgroundColor: '#1877F2',
+  },
+  googleButton: {
+    backgroundColor: '#DB4437',
   },
   socialButtonText: {
     color: '#fff',

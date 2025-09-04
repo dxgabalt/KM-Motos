@@ -32,12 +32,13 @@ export interface Database {
           business_name: string | null;
           ruc: string | null;
           document_id: string | null;
+          default_store_id: string | null;
         };
         Insert: {
           id: string;
           full_name: string;
           phone_number?: string | null;
-          role_id: number;
+          role_id?: number;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -46,6 +47,8 @@ export interface Database {
           business_name?: string | null;
           ruc?: string | null;
           document_id?: string | null;
+          phone?: string | null;
+          role?: string;
         };
         Update: {
           id?: string;
@@ -62,17 +65,21 @@ export interface Database {
           document_id?: string | null;
         };
       };
-      addresses: {
+      user_addresses: {
         Row: {
           id: string;
           user_id: string;
+          type: string;
           label: string;
+          address: string;
           address_line_1: string;
           address_line_2: string | null;
+          district: string;
           city: string;
           state: string | null;
           postal_code: string | null;
           country: string;
+          reference: string | null;
           is_default: boolean;
           created_at: string;
           updated_at: string;
@@ -594,6 +601,71 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+      };
+    };
+    Functions: {
+      api_search_products: {
+        Args: {
+          q: string;
+          category: string | null;
+          brand: string | null;
+          sort: string;
+          limit_: number;
+          offset_: number;
+        };
+        Returns: any[];
+      };
+      api_product_detail: {
+        Args: {
+          _product_id: number;
+          _store_id: string;
+        };
+        Returns: any;
+      };
+      api_get_stock_by_product: {
+        Args: {
+          _product_id: number;
+        };
+        Returns: any[];
+      };
+      api_place_order: {
+        Args: {
+          p_fulfillment: string;
+          p_store_id: string | null;
+          p_address_id: string | null;
+          p_payment_method: string;
+          p_notes: string;
+        };
+        Returns: any;
+      };
+      api_upsert_address: {
+        Args: {
+          p_id: string | null;
+          p_type: string;
+          p_label: string;
+          p_address: string;
+          p_district: string;
+          p_city: string;
+          p_reference: string | null;
+          p_is_default: boolean;
+        };
+        Returns: any;
+      };
+      api_set_default_store: {
+        Args: {
+          p_store_id: string;
+        };
+        Returns: any;
+      };
+      api_request_wholesaler: {
+        Args: {
+          p_business_name: string;
+          p_ruc: string;
+          p_business_address: string;
+          p_city: string;
+          p_reference: string | null;
+        };
+        Returns: any;
       };
     };
   };

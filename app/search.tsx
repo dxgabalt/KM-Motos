@@ -91,23 +91,33 @@ export default function SearchScreen() {
   const searchProducts = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('products')
-        .select('*')
-        .ilike('name', `%${searchQuery}%`);
+      // Usar búsqueda avanzada RPC
+      const { data, error } = await supabase.rpc('api_search_products', {
+        q: searchQuery,
+        category: null,
+        brand: selectedBrand !== 'TODOS' ? selectedBrand : null,
+        sort: selectedPriceRange === 'low' ? 'price_asc' : 
+              selectedPriceRange === 'popular' ? 'rating_desc' : 'name_asc',
+        limit_: 24,
+        offset_: 0
+      });
 
-      if (selectedBrand !== 'TODOS') {
-        const brand = brands.find(b => b.name === selectedBrand);
-        if (brand) {
-          query = query.eq('brand_id', brand.id);
-        }
-      }
-
-      const { data, error } = await query.limit(20);
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
       console.error('Error searching products:', error);
+      // Fallback a búsqueda básica
+      const { data: basicData } = await supabase
+        .from('products')
+        .select(`
+          id, sku, name, price, rating, reviews_count, image_url,
+          brand:brands(name),
+          category:categories(name)
+        `)
+        .or(`name.ilike.*${searchQuery}*,description.ilike.*${searchQuery}*`)
+        .limit(24);
+      
+      setProducts(basicData || []);
     } finally {
       setLoading(false);
     }

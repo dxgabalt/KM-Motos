@@ -31,31 +31,58 @@ export default function HomeScreen() {
 
   const fetchData = async () => {
     try {
-      // Fetch categories
+      // Fetch banners del carrusel
+      const { data: bannersData, error: bannersError } = await supabase
+        .from('banners')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
+
+      if (bannersError) console.error('Error fetching banners:', bannersError);
+
+      // Fetch brands chips
+      const { data: brandsData, error: brandsError } = await supabase
+        .from('brands')
+        .select('id, name, logo_url')
+        .eq('is_active', true)
+        .order('name');
+
+      if (brandsError) throw brandsError;
+      setBrands(brandsData || []);
+
+      // Fetch categorías grid
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
-        .select('*')
+        .select('id, name, icon, display_order')
         .order('display_order');
 
       if (categoriesError) throw categoriesError;
       setCategories(categoriesData || []);
 
-      // Fetch brands
-      const { data: brandsData, error: brandsError } = await supabase
-        .from('brands')
-        .select('*');
-
-      if (brandsError) throw brandsError;
-      setBrands(brandsData || []);
-
-      // Fetch featured products
+      // Fetch productos destacados
       const { data: productsData, error: productsError } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          brand:brands(*),
+          category:categories(name)
+        `)
+        .eq('featured', true)
         .limit(10);
 
       if (productsError) throw productsError;
       setProducts(productsData || []);
+
+      // Fetch tienda del usuario
+      if (user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('default_store_id')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) console.error('Error fetching user store:', profileError);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
-import { router } from 'expo-router';
-import { Header } from '@/components/ui/Header';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, ActivityIndicator } from 'react-native';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/contexts/AuthContext';
-import { Camera, ArrowLeft } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { Camera, ArrowLeft, User } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner-native';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function EditProfileScreen() {
-  const { user, profile, updateProfile } = useAuth();
+  const { user, profile } = useAuth();
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || '');
   const [documentId, setDocumentId] = useState(profile?.document_id || '');
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleUpdateProfile = async () => {
     if (!fullName.trim()) {
@@ -22,16 +22,28 @@ export default function EditProfileScreen() {
       return;
     }
 
+    if (!user) {
+      toast.error('Usuario no autenticado');
+      return;
+    }
+
     setLoading(true);
     try {
-      await updateProfile({
-        full_name: fullName.trim(),
-        phone_number: phoneNumber.trim() || null,
-        document_id: documentId.trim() || null,
-      });
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName.trim(),
+          phone_number: phoneNumber.trim() || null,
+          document_id: documentId.trim() || null,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
       toast.success('Perfil actualizado correctamente');
       router.back();
     } catch (error) {
+      console.error('Error updating profile:', error);
       toast.error('Error al actualizar perfil');
     } finally {
       setLoading(false);
@@ -39,21 +51,62 @@ export default function EditProfileScreen() {
   };
 
   const handleImagePicker = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      toast.error('Se requieren permisos para acceder a la galería');
-      return;
-    }
+    if (!user) return;
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        toast.error('Se requieren permisos para acceder a la galería');
+        return;
+      }
 
-    if (!result.canceled) {
-      toast.success('Imagen seleccionada');
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.length > 0) {
+        setUploadingImage(true);
+        const asset = result.assets[0];
+        const fileName = `${user.id}.jpg`;
+        
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, blob, { upsert: true });
+
+        if (uploadError) {
+          toast.error('Error al subir imagen');
+          return;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+
+        const avatar_url = urlData?.publicUrl || '';
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ avatar_url })
+          .eq('id', user.id);
+
+        if (updateError) {
+          toast.error('Error al actualizar avatar');
+          return;
+        }
+
+        toast.success('Foto actualizada correctamente');
+      }
+    } catch (error) {
+      console.error('Error updating avatar:', error);
+      toast.error('Error al procesar imagen');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -68,43 +121,59 @@ export default function EditProfileScreen() {
       
       <ScrollView style={styles.content}>
         <View style={styles.avatarSection}>
-          <TouchableOpacity onPress={handleImagePicker} style={styles.avatarContainer}>
-            <Image
-              source={{ uri: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=300&h=300' }}
-              style={styles.avatar}
-            />
+          <TouchableOpacity onPress={handleImagePicker} style={styles.avatarContainer} disabled={uploadingImage}>
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <User size={40} color="#888" />
+              </View>
+            )}
             <View style={styles.cameraOverlay}>
-              <Camera size={24} color="#000" />
+              {uploadingImage ? (
+                <ActivityIndicator size={20} color="#000" />
+              ) : (
+                <Camera size={20} color="#000" />
+              )}
             </View>
           </TouchableOpacity>
           <Button
-            title="Cambiar foto de perfil"
+            title={uploadingImage ? "Subiendo..." : "Cambiar foto de perfil"}
             onPress={handleImagePicker}
             variant="outline"
             size="medium"
+            disabled={uploadingImage}
           />
         </View>
 
         <View style={styles.form}>
-          <Text style={styles.sectionTitle}>Nombre(s)</Text>
-          <Input
+          <Text style={styles.sectionTitle}>Nombre completo</Text>
+          <TextInput
+            style={styles.input}
             value={fullName}
             onChangeText={setFullName}
-            placeholder="PAOLO CESAR"
+            placeholder="Ingresa tu nombre completo"
+            placeholderTextColor="#888"
           />
           
-          <Text style={styles.sectionTitle}>Apellidos</Text>
-          <Input
+          <Text style={styles.sectionTitle}>Número de teléfono</Text>
+          <TextInput
+            style={styles.input}
             value={phoneNumber}
             onChangeText={setPhoneNumber}
-            placeholder="FERNANDEZ COSTA"
+            placeholder="Ingresa tu teléfono"
+            placeholderTextColor="#888"
+            keyboardType="phone-pad"
           />
           
-          <Text style={styles.sectionTitle}>Documento de identidad</Text>
-          <Input
+          <Text style={styles.sectionTitle}>DNI</Text>
+          <TextInput
+            style={styles.input}
             value={documentId}
             onChangeText={setDocumentId}
-            placeholder="49302389"
+            placeholder="Ingresa tu DNI"
+            placeholderTextColor="#888"
+            keyboardType="numeric"
           />
         </View>
 
@@ -182,5 +251,24 @@ const styles = StyleSheet.create({
   },
   actions: {
     paddingBottom: 32,
+  },
+  avatarPlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#333',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  input: {
+    backgroundColor: '#222',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: '#fff',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#444',
+    marginBottom: 8,
   },
 });

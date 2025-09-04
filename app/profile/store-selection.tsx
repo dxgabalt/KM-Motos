@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowLeft, MapPin, Store } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Store, Check } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
 import { toast } from 'sonner-native';
@@ -10,13 +11,18 @@ import { toast } from 'sonner-native';
 type Store = Database['public']['Tables']['stores']['Row'];
 
 export default function StoreSelectionScreen() {
+  const { user, profile } = useAuth();
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchStores();
-  }, []);
+    if (user) {
+      fetchStores();
+      setSelectedStore(profile?.default_store_id || null);
+    }
+  }, [user, profile]);
 
   const fetchStores = async () => {
     try {
@@ -30,19 +36,40 @@ export default function StoreSelectionScreen() {
       setStores(data || []);
     } catch (error) {
       console.error('Error fetching stores:', error);
+      toast.error('Error al cargar tiendas');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!selectedStore) {
       toast.error('Por favor selecciona una tienda');
       return;
     }
-    
-    toast.success('Tienda predeterminada actualizada');
-    router.back();
+
+    if (!user) {
+      toast.error('Usuario no autenticado');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase.rpc('api_set_default_store', {
+        p_user_id: user.id,
+        p_store_id: selectedStore
+      });
+
+      if (error) throw error;
+
+      toast.success('Tienda predeterminada actualizada');
+      router.back();
+    } catch (error) {
+      console.error('Error setting default store:', error);
+      toast.error('Error al actualizar tienda predeterminada');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -55,44 +82,81 @@ export default function StoreSelectionScreen() {
       </View>
 
       <ScrollView style={styles.content}>
-        {stores.map((store) => (
-          <TouchableOpacity
-            key={store.id}
-            style={[
-              styles.storeCard,
-              selectedStore === store.id && styles.storeCardSelected,
-            ]}
-            onPress={() => setSelectedStore(store.id)}
-          >
-            <View style={styles.storeIcon}>
-              <Store size={24} color="#fff" />
-            </View>
-            <View style={styles.storeInfo}>
-              <Text style={styles.storeName}>{store.name}</Text>
-              <View style={styles.storeLocation}>
-                <MapPin size={14} color="#888" />
-                <Text style={styles.storeAddress}>{store.address}, {store.city}</Text>
-              </View>
-              {store.phone && (
-                <Text style={styles.storePhone}>{store.phone}</Text>
-              )}
-            </View>
-            {selectedStore === store.id && (
-              <View style={styles.selectedIndicator}>
-                <View style={styles.selectedDot} />
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#1DB954" />
+            <Text style={styles.loadingText}>Cargando tiendas...</Text>
+          </View>
+        ) : stores.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Store size={48} color="#666" />
+            <Text style={styles.emptyTitle}>No hay tiendas disponibles</Text>
+            <Text style={styles.emptySubtitle}>
+              No se encontraron tiendas activas en este momento
+            </Text>
+          </View>
+        ) : (
+          stores.map((store) => {
+            const isSelected = selectedStore === store.id;
+            const isCurrentDefault = profile?.default_store_id === store.id;
+
+            return (
+              <TouchableOpacity
+                key={store.id}
+                style={[
+                  styles.storeCard,
+                  isSelected && styles.storeCardSelected,
+                ]}
+                onPress={() => setSelectedStore(store.id)}
+              >
+                <View style={[styles.storeIcon, isSelected && styles.storeIconSelected]}>
+                  <Store size={24} color={isSelected ? "#000" : "#1DB954"} />
+                </View>
+                <View style={styles.storeInfo}>
+                  <View style={styles.storeHeader}>
+                    <Text style={[styles.storeName, isSelected && styles.storeNameSelected]}>
+                      {store.name}
+                    </Text>
+                    {isCurrentDefault && !isSelected && (
+                      <View style={styles.currentBadge}>
+                        <Text style={styles.currentText}>Actual</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.storeLocation}>
+                    <MapPin size={14} color={isSelected ? "#000" : "#888"} />
+                    <Text style={[styles.storeAddress, isSelected && styles.storeAddressSelected]}>
+                      {store.address}, {store.city}
+                    </Text>
+                  </View>
+                  {store.phone && (
+                    <Text style={[styles.storePhone, isSelected && styles.storePhoneSelected]}>
+                      {store.phone}
+                    </Text>
+                  )}
+                </View>
+                {isSelected && (
+                  <View style={styles.selectedIndicator}>
+                    <Check size={16} color="#000" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })
+        )}
       </ScrollView>
 
-      <View style={styles.footer}>
-        <Button
-          title="Guardar cambios"
-          onPress={handleSaveChanges}
-          size="large"
-        />
-      </View>
+      {!loading && stores.length > 0 && (
+        <View style={styles.footer}>
+          <Button
+            title="Guardar cambios"
+            onPress={handleSaveChanges}
+            loading={saving}
+            size="large"
+            disabled={!selectedStore || selectedStore === profile?.default_store_id}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -185,5 +249,64 @@ const styles = StyleSheet.create({
   footer: {
     padding: 16,
     paddingBottom: 32,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 16,
+    marginTop: 16,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+  },
+  emptyTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    color: '#888',
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  storeIconSelected: {
+    backgroundColor: '#fff',
+  },
+  storeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  storeNameSelected: {
+    color: '#000',
+  },
+  currentBadge: {
+    backgroundColor: '#333',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  currentText: {
+    color: '#1DB954',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  storeAddressSelected: {
+    color: '#000',
+  },
+  storePhoneSelected: {
+    color: '#000',
   },
 });

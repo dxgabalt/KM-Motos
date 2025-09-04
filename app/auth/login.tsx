@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner-native';
 
 export default function LoginScreen() {
@@ -20,9 +22,20 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      await signIn(email, password);
-      toast.success('Inicio de sesión exitoso');
-      router.replace('/(tabs)');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      });
+
+      if (error) {
+        toast.error(error.message || 'Error al iniciar sesión');
+        return;
+      }
+
+      if (data.user) {
+        toast.success('Inicio de sesión exitoso');
+        router.replace('/(tabs)');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Error al iniciar sesión');
     } finally {
@@ -30,10 +43,42 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google'
+      });
+      
+      if (error) {
+        toast.error('Error con Google: ' + error.message);
+      }
+    } catch (error: any) {
+      toast.error('Error al conectar con Google');
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error('Ingresa tu correo primero');
+      return;
+    }
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Revisa tu correo para restablecer tu contraseña');
+      }
+    } catch (error: any) {
+      toast.error('Error al enviar correo de recuperación');
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.logo}>KM MOTOS</Text>
+        <Logo width={180} height={60} />
         <Text style={styles.title}>Inicia sesión</Text>
       </View>
 
@@ -54,7 +99,7 @@ export default function LoginScreen() {
           secureTextEntry
         />
 
-        <TouchableOpacity style={styles.forgotPassword}>
+        <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
           <Text style={styles.forgotPasswordText}>
             ¿Olvidaste tu contraseña?
           </Text>
@@ -74,10 +119,10 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.socialButtons}>
-          <TouchableOpacity style={styles.socialButton}>
+          <TouchableOpacity style={[styles.socialButton, styles.facebookButton]}>
             <Text style={styles.socialButtonText}>f</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
+          <TouchableOpacity style={[styles.socialButton, styles.googleButton]} onPress={handleGoogleLogin}>
             <Text style={styles.socialButtonText}>G</Text>
           </TouchableOpacity>
         </View>
@@ -105,18 +150,19 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#000000',
   },
   header: {
     alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: 80,
+    paddingBottom: 60,
   },
   logo: {
-    color: '#1DB954',
-    fontSize: 32,
+    color: '#3CB043',
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 40,
+    marginBottom: 60,
+    letterSpacing: 2,
   },
   title: {
     color: '#fff',
@@ -159,9 +205,14 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#1877F2',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  facebookButton: {
+    backgroundColor: '#1877F2',
+  },
+  googleButton: {
+    backgroundColor: '#DB4437',
   },
   socialButtonText: {
     color: '#fff',

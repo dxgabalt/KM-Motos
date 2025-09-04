@@ -33,24 +33,38 @@ export default function ProductDetailScreen() {
 
   const fetchProduct = async () => {
     try {
+      // Producto completo con relaciones
       const { data: productData, error: productError } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          brand:brands(*),
+          category:categories(*)
+        `)
         .eq('id', id)
         .single();
 
       if (productError) throw productError;
       setProduct(productData);
 
-      // Fetch wholesaler pricing if user is wholesaler
-      if (profile?.is_wholesaler) {
-        const { data: pricingData, error: pricingError } = await supabase
-          .from('wholesaler_pricing')
-          .select('*')
-          .eq('product_id', id);
+      // Precios mayoristas
+      const { data: pricingData, error: pricingError } = await supabase
+        .from('wholesaler_pricing')
+        .select('*')
+        .eq('product_id', id);
 
-        if (pricingError) throw pricingError;
-        setWholesalerPricing(pricingData || []);
+      if (pricingError) console.error('Error fetching pricing:', pricingError);
+      setWholesalerPricing(pricingData || []);
+
+      // Stock por tienda actual usando RPC
+      if (profile?.default_store_id) {
+        const { data: stockData, error: stockError } = await supabase
+          .rpc('api_product_detail', {
+            _product_id: parseInt(id as string),
+            _store_id: profile.default_store_id
+          });
+
+        if (stockError) console.error('Error fetching stock:', stockError);
       }
     } catch (error) {
       console.error('Error fetching product:', error);

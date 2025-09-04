@@ -4,27 +4,41 @@ import { View, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 
-const LOGO_URL = 'https://www.kmmotos.com/cdn/shop/files/Logo-1.png?v=1696955196&width=500';
-
 export default function SplashScreen() {
 	const router = useRouter();
 
 	useEffect(() => {
 		const checkSession = async () => {
-			const { data, error } = await supabase.auth.getSession();
-			if (data?.session) {
-				router.replace('/'); // Home principal
-			} else {
+			try {
+				const { data, error } = await supabase.auth.getSession();
+				
+				// Delay mínimo para mostrar splash
+				await new Promise(resolve => setTimeout(resolve, 2000));
+				
+				if (data?.session) {
+					router.replace('/(tabs)');
+				} else {
+					router.replace('/onboarding');
+				}
+			} catch (error) {
+				console.error('Error checking session:', error);
 				router.replace('/onboarding');
 			}
 		};
+		
 		checkSession();
 	}, []);
 
 	return (
 		<View style={styles.container}>
-			<Image source={{ uri: LOGO_URL }} style={styles.logo} resizeMode="contain" />
-			<ActivityIndicator size="large" color="#3CB043" style={{ marginTop: 32 }} />
+			<View style={styles.logoContainer}>
+				<View style={styles.logoBox}>
+					<View style={styles.logoText}>
+						<View style={styles.kmText} />
+						<View style={styles.motosText} />
+					</View>
+				</View>
+			</View>
 		</View>
 	);
 }
@@ -32,12 +46,37 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#111',
+		backgroundColor: '#000000',
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
-	logo: {
-		width: 200,
-		height: 80,
+	logoContainer: {
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	logoBox: {
+		width: 120,
+		height: 60,
+		backgroundColor: '#3CB043',
+		borderRadius: 8,
+		alignItems: 'center',
+		justifyContent: 'center',
+		marginBottom: 20,
+	},
+	logoText: {
+		alignItems: 'center',
+	},
+	kmText: {
+		width: 80,
+		height: 20,
+		backgroundColor: '#FFFFFF',
+		marginBottom: 4,
+		borderRadius: 2,
+	},
+	motosText: {
+		width: 60,
+		height: 12,
+		backgroundColor: '#FFFFFF',
+		borderRadius: 2,
 	},
 });

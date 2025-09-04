@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui/Button';
-import { Megaphone, Truck, ShoppingBag } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -11,19 +10,22 @@ const onboardingData = [
     id: 1,
     title: 'Lorem ipsum',
     description: 'Lorem ipsum dolor sit amet consectetur. Mollis integer neque nec risus id. Orci morbi tincidunt eros pharetra vitae. Purus porttitor imperdiet quis.',
-    icon: Megaphone,
+    icon: '📱',
+    bgColor: '#1A1A1A',
   },
   {
     id: 2,
-    title: 'Pago contraentrega',
+    title: 'Lorem ipsum',
     description: 'Lorem ipsum dolor sit amet consectetur. Mollis integer neque nec risus id. Orci morbi tincidunt eros pharetra vitae. Purus porttitor imperdiet quis.',
-    icon: Truck,
+    icon: '📢',
+    bgColor: '#1A1A1A',
   },
   {
     id: 3,
-    title: 'Compra fácil',
+    title: 'Pago contraentrega',
     description: 'Lorem ipsum dolor sit amet consectetur. Mollis integer neque nec risus id. Orci morbi tincidunt eros pharetra vitae. Purus porttitor imperdiet quis.',
-    icon: ShoppingBag,
+    icon: '🚚',
+    bgColor: '#1A1A1A',
   },
 ];
 
@@ -39,12 +41,21 @@ export default function OnboardingScreen() {
   };
 
   const renderItem = (item: typeof onboardingData[0]) => {
-    const Icon = item.icon;
     return (
-      <View style={styles.slide}>
-        <View style={styles.iconContainer}>
-          <Icon size={80} color="#1DB954" />
+      <View style={[styles.slide, { backgroundColor: item.bgColor }]}>
+        <View style={styles.logoContainer}>
+          <View style={styles.logoBox}>
+            <Text style={styles.logoText}>KM</Text>
+            <Text style={styles.logoSubtext}>MOTOS</Text>
+          </View>
         </View>
+        
+        <View style={styles.iconContainer}>
+          <View style={styles.iconCircle}>
+            <Text style={styles.iconEmoji}>{item.icon}</Text>
+          </View>
+        </View>
+        
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description}>{item.description}</Text>
       </View>
@@ -109,6 +120,42 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: 40,
+  },
+  iconEmoji: {
+    fontSize: 80,
+    textAlign: 'center',
+  },
+  logoContainer: {
+    position: 'absolute',
+    top: 80,
+    alignSelf: 'center',
+  },
+  logoBox: {
+    backgroundColor: '#3CB043',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  logoText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  logoSubtext: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  iconCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#333333',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     color: '#fff',
